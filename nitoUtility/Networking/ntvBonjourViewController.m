@@ -9,8 +9,7 @@
 
 @synthesize  delegate;
 
-- (id)initWithStyle:(UITableViewStyle)style
-{
+- (id)initWithStyle:(UITableViewStyle)style {
     self = [super initWithStyle:style];
     if (self) {
         // Custom initialization
@@ -18,14 +17,15 @@
     return self;
 }
 
-- (void)viewDidLoad
-{
+- (void)viewDidLoad {
     [super viewDidLoad];
     browser = [[NSNetServiceBrowser alloc] init];
     services = [NSMutableArray array];
     [browser setDelegate:self];
     [browser stop]; //if you dont stop it, it never works in the first place
-    [browser searchForServicesOfType:@"_mediaremotetv._tcp." inDomain:@""];
+    //_airplay._tcp.
+    //_mediaremotetv._tcp.
+    [browser searchForServicesOfType:@"_airplay._tcp." inDomain:@""];
     [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"Cell"];
 }
 
@@ -33,15 +33,13 @@
 #pragma mark NSNetService / Bonjour Stuff
 
 
-- (NSDictionary *)stringDictionaryFromService:(NSNetService *)theService
-{
+- (NSDictionary *)stringDictionaryFromService:(NSNetService *)theService {
 	NSData *txtRecordDict = [theService TXTRecordData];
 	
 	NSDictionary *theDict = [NSNetService dictionaryFromTXTRecordData:txtRecordDict];
 	NSMutableDictionary *finalDict = [[NSMutableDictionary alloc] init];
 	NSArray *keys = [theDict allKeys];
-	for (NSString *theKey in keys)
-	{
+	for (NSString *theKey in keys) {
 		NSString *currentString = [[NSString alloc] initWithData:[theDict valueForKey:theKey] encoding:NSUTF8StringEncoding];
 		[finalDict setObject:currentString forKey:theKey];
 	}
@@ -50,13 +48,10 @@
 }
 
 
-- (void)setCurrentService:(NSNetService *)clickedService
-{
-	
+- (void)setCurrentService:(NSNetService *)clickedService {
 	NSDictionary *finalDict = [self stringDictionaryFromService:clickedService];
 	NSLog(@"finalDict: %@", finalDict);
-	if ([[finalDict allKeys] count] > 0)
-	{
+	if ([[finalDict allKeys] count] > 0) {
 		NSString *model = [finalDict objectForKey:@"model"];
 		if ([model isEqualToString:@"AppleTV3,1"])
 		{
@@ -70,41 +65,11 @@
 	
     ntvNetService *service = [[ntvNetService alloc] initWithNetService:clickedService];
     service.serviceDictionary = finalDict;
-    /*
-    
-	struct sockaddr_in *addr = (struct sockaddr_in *) [[[clickedService addresses] objectAtIndex:0]
-								   bytes];
-    NSString *ip = [NSString stringWithUTF8String:(char *) inet_ntoa(addr->sin_addr)];
-	NSString *fullIP = [NSString stringWithFormat:@"%@:%i", ip, 22];
-    NSLog(@"full IP: %@", fullIP);
-    NSString *headerTitle = [NSString stringWithFormat:@"%@ (%@)", [clickedService name], fullIP];
-    NSMutableDictionary *dict = [NSMutableDictionary new];
-    dict[@"fullIP"] = fullIP;
-    dict[@"IP"] = ip;
-    dict[@"name"] = [clickedService name];
-    dict[@"headerTitle"] = headerTitle;
-    */
     if (self.deviceSelectedBlock){
         
         self.deviceSelectedBlock(service);
-        
     }
-    
-    
-//    BOOL jailbroken = [self isJailbroken];
-//	if (jailbroken == FALSE)
-//	{
-//        [self showNotJailbrokenWarning];
-//		[DEFAULTS removeObjectForKey:ATV_HOST];
-//        [DEFAULTS removeObjectForKey:ATV_HOST_NAME];
-//		[DEFAULTS removeObjectForKey:@"selectedValue"];
-//        [self resetServerSettings];
-//	}
-    
 }
-
-
-
 
 
 - (void)updateUI {
@@ -134,12 +99,8 @@
 
 // Error handling code
 
-- (void)handleError:(NSNumber *)error
-
-{
-	
+- (void)handleError:(NSNumber *)error {
     NSLog(@"An error occurred. Error code = %d", [error intValue]);
-	
     // Handle error here
 	
 }
@@ -162,23 +123,12 @@
 	//NSLog(@"didFindService: %@", aNetService);
     
     [services addObject:aNetService];
-	//int servicesCount = [services count]-1;
-	
-	//[services insertObject:aNetService atIndex:servicesCount];
-    
     [aNetService resolveWithTimeout:0.0];
 	
     if(!moreComing) {
-        
-        //set the content of the picker view from here
-        //	[deviceController setContent:services];
-       
         [[self tableView] reloadData];
-        
     }
 }
-
-
 
 - (void)netServiceBrowser:(NSNetServiceBrowser *)aNetServiceBrowser didRemoveService:(NSNetService *)aNetService moreComing:(BOOL)moreComing {
     [services removeObject:aNetService];
@@ -252,7 +202,6 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-
     // Return the number of rows in the section.
     return [services count];
 }
@@ -262,16 +211,10 @@
     static NSString *CellIdentifier = @"Cell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
     NSString *currentService = [[services objectAtIndex:indexPath.row] name];
-    
-    
     cell.textLabel.text = currentService;
-    // Configure the cell...
-    
+
     return cell;
 }
-
-
-
 
 
 #pragma mark - Table view delegate

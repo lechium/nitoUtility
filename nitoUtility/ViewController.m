@@ -27,61 +27,58 @@
     
 }
 
-- (void)showInvalidPasswordAlertForIP:(NSString *)ipAddress {
+- (void)showAlertWithTitle:(NSString *)title message:(NSString *)message {
     
+    UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
 
+    [alertCon addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self presentViewController:alertCon animated:true completion:nil];
+    });
+}
+
+- (void)showInvalidPasswordAlert {
     
     UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:@"Non default root password" message:@"Please enter the root password for your AppleTV" preferredStyle:UIAlertControllerStyleAlert];
-    
     [alertCon addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
-        
         textField.secureTextEntry = true;
     }];
-    
     UIAlertAction *setPassword = [UIAlertAction actionWithTitle:@"Set Password" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         
         NSString *newPassword = alertCon.textFields[0].text;
         NSError *newError = nil;
-        SSHWrapper *wrapper = [SSHWrapper new];[wrapper connectToHost:ipAddress port:22 user:@"root" password:newPassword error:&newError];
+        SSHWrapper *wrapper = [SSHWrapper new];[wrapper connectToHost:self.device.ipAddress port:22 user:@"root" password:newPassword error:&newError];
         
         if (newError == nil){
             [self fixStuffOnSession:wrapper];
         } else {
-            [self showInvalidPasswordAlertForIP:ipAddress];
+            [self showInvalidPasswordAlert];
         }
-        
     }];
-    
     [alertCon addAction:setPassword];
     [alertCon addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
-    
     dispatch_async(dispatch_get_main_queue(), ^{
             [self presentViewController:alertCon animated:true completion:nil];
     });
-
 }
 
 
-- (void)fixDeviceAtIP:(NSString *)ipAddress {
-    
-    if ([self isJailbroken]){
-        NSLog(@"is jailbroken!");
-    } else {
-        NSLog(@"is NOT jailbroken!");
+- (void)fixCurrentDevice {
+    if (![self isJailbroken]){
+        //NSLog(@"is NOT jailbroken!");
+        [self showAlertWithTitle:@"An error occured" message:[NSString stringWithFormat:@"The %@ '%@' running %@ is not currently jailbroken.", self.device.serviceDictionary[@"model"], self.device.serviceName, self.device.serviceDictionary[@"osvers"]]];
         return;
     }
     __block NSError *connectError = nil;
     SSHWrapper *wrapper = [SSHWrapper new];
-    [wrapper connectToHost:ipAddress port:22 user:@"root" password:@"alpine" error:&connectError];
+    [wrapper connectToHost:self.device.ipAddress port:22 user:@"root" password:@"alpine" error:&connectError];
     
     if (connectError){
         NSLog(@"connection error: %@", connectError);
-        [self showInvalidPasswordAlertForIP:ipAddress];
-        
+        [self showInvalidPasswordAlert];
     } else {
         [self fixStuffOnSession:wrapper];
     }
-    
 }
 
 
@@ -217,7 +214,7 @@
         if (self.device != nil){
             
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-                [self fixDeviceAtIP:self.device.ipAddress];
+                [self fixCurrentDevice];
             });
         }
 
