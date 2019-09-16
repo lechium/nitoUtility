@@ -1,0 +1,12 @@
+Package: com.nito.utility
+Priority: extra
+Section: Utilities
+Maintainer: Kevin Bradley
+Architecture: iphoneos-arm
+Version: 1.0
+Depends: firmware (>= 9.0)
+Description: Fix various nitoTV installer issues on your AppleTV directly from your iPhone!
+Name: nito utility
+Author: Kevin Bradley
+
+
