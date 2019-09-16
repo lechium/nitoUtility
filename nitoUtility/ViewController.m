@@ -9,7 +9,7 @@
 #import "ViewController.h"
 #import "SSHWrapper.h"
 #import "ntvBonjourViewController.h"
-
+#import "ObjSSH.h"
 
 @interface ViewController ()
 
@@ -27,44 +27,87 @@
     
 }
 
+- (void)showInvalidPasswordAlertForIP:(NSString *)ipAddress {
+    
+
+    
+    UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:@"Non default root password" message:@"Please enter the root password for your AppleTV" preferredStyle:UIAlertControllerStyleAlert];
+    
+    [alertCon addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        
+        textField.secureTextEntry = true;
+    }];
+    
+    UIAlertAction *setPassword = [UIAlertAction actionWithTitle:@"Set Password" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        
+        NSString *newPassword = alertCon.textFields[0].text;
+        NSError *newError = nil;
+        SSHWrapper *wrapper = [SSHWrapper new];[wrapper connectToHost:ipAddress port:22 user:@"root" password:newPassword error:&newError];
+        
+        if (newError == nil){
+            [self fixStuffOnSession:wrapper];
+        } else {
+            [self showInvalidPasswordAlertForIP:ipAddress];
+        }
+        
+    }];
+    
+    [alertCon addAction:setPassword];
+    [alertCon addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+            [self presentViewController:alertCon animated:true completion:nil];
+    });
+
+}
+
+
 - (void)fixDeviceAtIP:(NSString *)ipAddress {
     
+    if ([self isJailbroken]){
+        NSLog(@"is jailbroken!");
+    } else {
+        NSLog(@"is NOT jailbroken!");
+        return;
+    }
     __block NSError *connectError = nil;
     SSHWrapper *wrapper = [SSHWrapper new];
     [wrapper connectToHost:ipAddress port:22 user:@"root" password:@"alpine" error:&connectError];
     
     if (connectError){
         NSLog(@"connection error: %@", connectError);
-        UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:@"Non default root password" message:@"Please enter the root password for your AppleTV" preferredStyle:UIAlertControllerStyleAlert];
-        
-        [alertCon addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
-            
-            textField.secureTextEntry = true;
-        }];
-        
-        UIAlertAction *setPassword = [UIAlertAction actionWithTitle:@"Set Password" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            
-            NSString *newPassword = alertCon.textFields[0].text;
-            NSError *newError = nil;
-            [wrapper connectToHost:ipAddress port:22 user:@"root" password:newPassword error:&newError];
-            
-            if (newError == nil){
-                [self fixStuffOnSession:wrapper];
-            }
-            
-        }];
-        
-        [alertCon addAction:setPassword];
-        
-        [alertCon addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
-        
-        [self presentViewController:alertCon animated:true completion:nil];
+        [self showInvalidPasswordAlertForIP:ipAddress];
         
     } else {
         [self fixStuffOnSession:wrapper];
     }
     
 }
+
+
+- (BOOL)isJailbroken
+{
+    NSError *error = nil;
+    if (self.device != nil)
+    {
+        ObjSSH *ssh = [ObjSSH connectToHost:self.device.fullIP withUsername:@"root" password:@"alpine" error:&error];
+        if (error)
+        {
+            NSLog(@"error: %@", [error localizedDescription]);
+            if ([[error localizedDescription] isEqualToString:@"Failed to connect"])
+            {
+                [ssh disconnect];
+                return (FALSE);
+            }
+            [ssh disconnect];
+        }
+    } else {
+        return (FALSE);
+    }
+    
+    return (TRUE);
+}
+
 
 - (void)fixStuffOnSession:(SSHWrapper *)wrapper {
     
@@ -88,7 +131,7 @@
     }
     if (![results containsString:@"CDHash"]){
         issuesDetected++;
-        NSLog(@"Detected unsinged libssl, Repairing!");
+        NSLog(@"Detected unsigned libssl, Repairing!");
         [wrapper executeCommand:@"/usr/local/bin/jtool --sign platform --inplace /usr/lib/libssl.1.1.dylib" error:nil];
         results = [wrapper executeCommand:@"/usr/local/bin/jtool --sig /usr/lib/libssl.1.1.dylib" error:&connectError];
         if ([results containsString:@"CDHash"]){

@@ -25,7 +25,7 @@
     services = [NSMutableArray array];
     [browser setDelegate:self];
     [browser stop]; //if you dont stop it, it never works in the first place
-    [browser searchForServicesOfType:@"_airplay._tcp." inDomain:@""];
+    [browser searchForServicesOfType:@"_mediaremotetv._tcp." inDomain:@""];
     [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"Cell"];
 }
 
