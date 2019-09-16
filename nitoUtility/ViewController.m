@@ -175,8 +175,7 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"defaultCell" forIndexPath:indexPath];
     
-    cell.selectionStyle = UITableViewCellSelectionStyleNone;
-    
+    //cell.selectionStyle = UITableViewCellSelectionStyleNone;
     switch (indexPath.section) {
         case 0:
             cell.textLabel.text = @"Select AppleTV";
@@ -197,6 +196,7 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
     
+    [tableView deselectRowAtIndexPath:indexPath animated:true];
     if (indexPath.section == 0){
         ntvBonjourViewController *bv = [[ntvBonjourViewController alloc] initWithStyle:UITableViewStylePlain];
         bv.deviceSelectedBlock = ^(ntvNetService *device) {
