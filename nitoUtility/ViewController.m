@@ -10,6 +10,7 @@
 #import "SSHWrapper.h"
 #import "ntvBonjourViewController.h"
 #import "ObjSSH.h"
+#import "SVProgressHUD/SVProgressHUD.h"
 
 @interface ViewController ()
 
@@ -50,7 +51,11 @@
         SSHWrapper *wrapper = [SSHWrapper new];[wrapper connectToHost:self.device.ipAddress port:22 user:@"root" password:newPassword error:&newError];
         
         if (newError == nil){
-            [self fixStuffOnSession:wrapper];
+            [SVProgressHUD show];
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                [self fixStuffOnSession:wrapper];
+            });
+            
         } else {
             [self showInvalidPasswordAlert];
         }
@@ -77,7 +82,10 @@
         NSLog(@"connection error: %@", connectError);
         [self showInvalidPasswordAlert];
     } else {
-        [self fixStuffOnSession:wrapper];
+        [SVProgressHUD show];
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+            [self fixStuffOnSession:wrapper];
+        });
     }
 }
 
@@ -108,54 +116,94 @@
 
 - (void)fixStuffOnSession:(SSHWrapper *)wrapper {
     
+    //dispatch_async(dispatch_get_main_queue(), ^{
+    
+   // });
+    
+   
     __block NSError *connectError = nil;
     NSInteger issuesDetected = 0;
     NSInteger issuesFixed = 0;
-    NSString *results = [wrapper executeCommand:@"/usr/local/bin/jtool --sig /usr/lib/libssl.1.1.dylib" error:&connectError];
-    NSString *perms = [wrapper executeCommand:@"/usr/bin/stat -c \"%a\" /usr/libexec/goNito" error:nil];
-    NSString *lastCheck = [wrapper executeCommand:@"file /var/mobile/Documents/.token" error:nil];
-    
-    if ([perms integerValue] != 6755){
+    NSString *csCheckCommand = @"/usr/local/bin/jtool --sig /usr/lib/libssl.1.1.dylib";
+    NSString *tokenCheckCommand = @"file /var/mobile/Documents/.token";
+    NSString *permissionCheckCommand = @"/usr/bin/stat -c \"%a\" /usr/libexec/goNito";
+    NSString *sslCodeSignCheck = [wrapper executeCommand:csCheckCommand error:&connectError];
+    NSString *goNitoPermissionCheck = [wrapper executeCommand:permissionCheckCommand error:nil];
+    NSString *tokenFileCheck = [wrapper executeCommand:tokenCheckCommand error:nil];
+    NSString *keyCheckCommand = @"/usr/bin/bash apt-key list | grep -c \"030F 5D6E 7E14 4939 7E04  B6B2 5330 AE38 84B9 841D\"";
+    NSString *keyCheck = [wrapper executeCommand:keyCheckCommand error:nil];
+    if (keyCheck.integerValue != 1){
+        issuesDetected++;
+        NSString *keyCommand = @"/usr/bin/bash /usr/bin/apt-key add /Applications/nitoTV.app/pub.key";
+        [wrapper executeCommand:keyCommand error:nil];
+        keyCommand = @"/usr/bin/bash /usr/bin/apt-key add /Applications/nitoTV.app/pub2.key";
+        [wrapper executeCommand:keyCommand error:nil];
+        keyCheck = [wrapper executeCommand:keyCheckCommand error:nil];
+        if (keyCheck.integerValue == 1){
+            issuesFixed++;
+            NSLog(@"missing keys fixed!");
+        }
+    }
+    if ([goNitoPermissionCheck integerValue] != 6755){
         issuesDetected++;
         NSLog(@"invalid permissions detected for goNito, repairing...");
         [wrapper executeCommand:@"/usr/bin/chmod 6755 /usr/libexec/goNito" error:nil];
-        perms =  [wrapper executeCommand:@"/usr/bin/stat -c \"%a\" /usr/libexec/goNito" error:nil];
-        if (perms.integerValue == 6755){
+        goNitoPermissionCheck =  [wrapper executeCommand:permissionCheckCommand error:nil];
+        if (goNitoPermissionCheck.integerValue == 6755){
             issuesFixed++;
             NSLog(@"goNito permissions fixed!");
         }
         
     }
-    if (![results containsString:@"CDHash"]){
+    if (![sslCodeSignCheck containsString:@"CDHash"]){
         issuesDetected++;
         NSLog(@"Detected unsigned libssl, Repairing!");
         [wrapper executeCommand:@"/usr/local/bin/jtool --sign platform --inplace /usr/lib/libssl.1.1.dylib" error:nil];
-        results = [wrapper executeCommand:@"/usr/local/bin/jtool --sig /usr/lib/libssl.1.1.dylib" error:&connectError];
-        if ([results containsString:@"CDHash"]){
+        sslCodeSignCheck = [wrapper executeCommand:csCheckCommand error:&connectError];
+        if ([sslCodeSignCheck containsString:@"CDHash"]){
             NSLog(@"libssl issue fixed!");
             issuesFixed++;
         }
     }
     
-    if ([lastCheck containsString:@"No such file or directory"]){
+    if ([tokenFileCheck containsString:@"No such file or directory"]){
         
         issuesDetected++;
         NSLog(@"Missing hidden token, this file is a relic but if its missing it can cause crashes in older versions preventing updates. Repairing!");
         [wrapper executeCommand:@"/usr/bin/touch /var/mobile/Documents/.token" error:nil];
-        lastCheck = [wrapper executeCommand:@"file /var/mobile/Documents/.token" error:nil];
-        if (![lastCheck containsString:@"No such file or directory"]){
+        tokenFileCheck = [wrapper executeCommand:tokenCheckCommand error:nil];
+        if (![tokenFileCheck containsString:@"No such file or directory"]){
             NSLog(@"Created .token file");
             issuesFixed++;
         }
     }
-    NSString *reportString = [NSString stringWithFormat:@"%lu issues detected. %lu issues fixed", issuesDetected, issuesFixed];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [SVProgressHUD dismiss];
+    });
+    //[wrapper executeCommand:@"dpkg --configure -a" error:nil];
+    //[wrapper executeCommand:@"apt-get install -f -y --force-yes" error:nil];
+    //[wrapper executeCommand:@"apt-get update" error:nil];
+    NSString *plural = @"";
+    if (issuesFixed > 1){
+        plural = @"s";
+    }
+    NSString *reportString = @"0 issues detected." ;
+    if (issuesFixed > 0 || issuesDetected > 0){
+        reportString = [NSString stringWithFormat:@"%lu issue%@ detected. %lu issue%@ fixed", issuesDetected,plural , issuesFixed, plural];
+    }
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Finished" message:reportString preferredStyle:UIAlertControllerStyleAlert];
     [alertController addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
     dispatch_async(dispatch_get_main_queue(), ^{
         [self presentViewController:alertController animated:TRUE completion:nil];
         
     });
-    NSLog(@"%lu issues detected. %lu issues fixed", issuesDetected, issuesFixed);
+    NSLog(@"%lu issue(s) detected. %lu issue(s) fixed", issuesDetected, issuesFixed);
+}
+
+- (void)updateAllToLatest:(SSHWrapper *)session {
+    
+    
+    
 }
 
 #pragma mark - Table view data source
@@ -213,9 +261,7 @@
         
         if (self.device != nil){
             
-            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-                [self fixCurrentDevice];
-            });
+            [self fixCurrentDevice];
         }
 
     }

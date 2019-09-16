@@ -20,6 +20,22 @@
 		3242B506232F524F006A2E3E /* ObjSSH.m in Sources */ = {isa = PBXBuildFile; fileRef = 3242B504232F524F006A2E3E /* ObjSSH.m */; };
 		3297E664232F8EDE0086AC64 /* ntvBonjourViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 3297E662232F8EDE0086AC64 /* ntvBonjourViewController.m */; };
 		3297E66A23300F360086AC64 /* ntvNetService.m in Sources */ = {isa = PBXBuildFile; fileRef = 3297E66923300F360086AC64 /* ntvNetService.m */; };
+		3297E678233044EE0086AC64 /* info@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E66C233044ED0086AC64 /* info@2x.png */; };
+		3297E679233044EE0086AC64 /* info@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E66D233044ED0086AC64 /* info@3x.png */; };
+		3297E67A233044EE0086AC64 /* error.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E66E233044ED0086AC64 /* error.png */; };
+		3297E67B233044EE0086AC64 /* angle-mask@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E66F233044ED0086AC64 /* angle-mask@2x.png */; };
+		3297E67C233044EE0086AC64 /* error@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E670233044ED0086AC64 /* error@2x.png */; };
+		3297E67D233044EE0086AC64 /* info.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E671233044ED0086AC64 /* info.png */; };
+		3297E67E233044EE0086AC64 /* success@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E672233044ED0086AC64 /* success@3x.png */; };
+		3297E67F233044EE0086AC64 /* success.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E673233044ED0086AC64 /* success.png */; };
+		3297E680233044EE0086AC64 /* error@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E674233044EE0086AC64 /* error@3x.png */; };
+		3297E681233044EE0086AC64 /* success@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E675233044EE0086AC64 /* success@2x.png */; };
+		3297E682233044EE0086AC64 /* angle-mask.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E676233044EE0086AC64 /* angle-mask.png */; };
+		3297E683233044EE0086AC64 /* angle-mask@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 3297E677233044EE0086AC64 /* angle-mask@3x.png */; };
+		3297E68C233045AA0086AC64 /* LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3297E686233045A90086AC64 /* LICENSE.txt */; };
+		3297E68D233045AA0086AC64 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 3297E687233045A90086AC64 /* README.md */; };
+		3297E68E233045AA0086AC64 /* SVIndefiniteAnimatedView.m in Sources */ = {isa = PBXBuildFile; fileRef = 3297E689233045A90086AC64 /* SVIndefiniteAnimatedView.m */; };
+		3297E68F233045AA0086AC64 /* SVProgressHUD.m in Sources */ = {isa = PBXBuildFile; fileRef = 3297E68B233045A90086AC64 /* SVProgressHUD.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +63,24 @@
 		3297E663232F8EDE0086AC64 /* ntvBonjourViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ntvBonjourViewController.h; sourceTree = "<group>"; };
 		3297E66823300F360086AC64 /* ntvNetService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ntvNetService.h; sourceTree = "<group>"; };
 		3297E66923300F360086AC64 /* ntvNetService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ntvNetService.m; sourceTree = "<group>"; };
+		3297E66C233044ED0086AC64 /* info@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "info@2x.png"; sourceTree = "<group>"; };
+		3297E66D233044ED0086AC64 /* info@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "info@3x.png"; sourceTree = "<group>"; };
+		3297E66E233044ED0086AC64 /* error.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = error.png; sourceTree = "<group>"; };
+		3297E66F233044ED0086AC64 /* angle-mask@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "angle-mask@2x.png"; sourceTree = "<group>"; };
+		3297E670233044ED0086AC64 /* error@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "error@2x.png"; sourceTree = "<group>"; };
+		3297E671233044ED0086AC64 /* info.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = info.png; sourceTree = "<group>"; };
+		3297E672233044ED0086AC64 /* success@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "success@3x.png"; sourceTree = "<group>"; };
+		3297E673233044ED0086AC64 /* success.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = success.png; sourceTree = "<group>"; };
+		3297E674233044EE0086AC64 /* error@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "error@3x.png"; sourceTree = "<group>"; };
+		3297E675233044EE0086AC64 /* success@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "success@2x.png"; sourceTree = "<group>"; };
+		3297E676233044EE0086AC64 /* angle-mask.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "angle-mask.png"; sourceTree = "<group>"; };
+		3297E677233044EE0086AC64 /* angle-mask@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "angle-mask@3x.png"; sourceTree = "<group>"; };
+		3297E686233045A90086AC64 /* LICENSE.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
+		3297E687233045A90086AC64 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		3297E688233045A90086AC64 /* SVIndefiniteAnimatedView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SVIndefiniteAnimatedView.h; sourceTree = "<group>"; };
+		3297E689233045A90086AC64 /* SVIndefiniteAnimatedView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SVIndefiniteAnimatedView.m; sourceTree = "<group>"; };
+		3297E68A233045A90086AC64 /* SVProgressHUD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SVProgressHUD.h; sourceTree = "<group>"; };
+		3297E68B233045A90086AC64 /* SVProgressHUD.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SVProgressHUD.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,6 +117,7 @@
 		3242B4DE232F4B3C006A2E3E /* nitoUtility */ = {
 			isa = PBXGroup;
 			children = (
+				3297E685233045A90086AC64 /* SVProgressHUD */,
 				3242B4DF232F4B3C006A2E3E /* AppDelegate.h */,
 				3242B4E0232F4B3C006A2E3E /* AppDelegate.m */,
 				3242B4E2232F4B3C006A2E3E /* ViewController.h */,
@@ -93,6 +128,7 @@
 				3242B4EA232F4B3E006A2E3E /* LaunchScreen.storyboard */,
 				3242B4ED232F4B3E006A2E3E /* Info.plist */,
 				3242B4EE232F4B3E006A2E3E /* main.m */,
+				3297E684233044FB0086AC64 /* Resources */,
 				3242B4F6232F4B84006A2E3E /* libssh2.a */,
 				3242B4FC232F4BC3006A2E3E /* include */,
 				3242B4F5232F4B84006A2E3E /* openssl.framework */,
@@ -131,6 +167,38 @@
 				3242B4F9232F4BB8006A2E3E /* SSHWrapper.m */,
 			);
 			path = Networking;
+			sourceTree = "<group>";
+		};
+		3297E684233044FB0086AC64 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				3297E676233044EE0086AC64 /* angle-mask.png */,
+				3297E66F233044ED0086AC64 /* angle-mask@2x.png */,
+				3297E677233044EE0086AC64 /* angle-mask@3x.png */,
+				3297E66E233044ED0086AC64 /* error.png */,
+				3297E670233044ED0086AC64 /* error@2x.png */,
+				3297E674233044EE0086AC64 /* error@3x.png */,
+				3297E671233044ED0086AC64 /* info.png */,
+				3297E66C233044ED0086AC64 /* info@2x.png */,
+				3297E66D233044ED0086AC64 /* info@3x.png */,
+				3297E673233044ED0086AC64 /* success.png */,
+				3297E675233044EE0086AC64 /* success@2x.png */,
+				3297E672233044ED0086AC64 /* success@3x.png */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		3297E685233045A90086AC64 /* SVProgressHUD */ = {
+			isa = PBXGroup;
+			children = (
+				3297E686233045A90086AC64 /* LICENSE.txt */,
+				3297E687233045A90086AC64 /* README.md */,
+				3297E688233045A90086AC64 /* SVIndefiniteAnimatedView.h */,
+				3297E689233045A90086AC64 /* SVIndefiniteAnimatedView.m */,
+				3297E68A233045A90086AC64 /* SVProgressHUD.h */,
+				3297E68B233045A90086AC64 /* SVProgressHUD.m */,
+			);
+			path = SVProgressHUD;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -190,9 +258,23 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3297E680233044EE0086AC64 /* error@3x.png in Resources */,
+				3297E679233044EE0086AC64 /* info@3x.png in Resources */,
+				3297E678233044EE0086AC64 /* info@2x.png in Resources */,
+				3297E67D233044EE0086AC64 /* info.png in Resources */,
+				3297E681233044EE0086AC64 /* success@2x.png in Resources */,
+				3297E683233044EE0086AC64 /* angle-mask@3x.png in Resources */,
+				3297E682233044EE0086AC64 /* angle-mask.png in Resources */,
+				3297E67A233044EE0086AC64 /* error.png in Resources */,
+				3297E67C233044EE0086AC64 /* error@2x.png in Resources */,
+				3297E67F233044EE0086AC64 /* success.png in Resources */,
 				3242B4EC232F4B3E006A2E3E /* LaunchScreen.storyboard in Resources */,
+				3297E68D233045AA0086AC64 /* README.md in Resources */,
 				3242B4E9232F4B3E006A2E3E /* Assets.xcassets in Resources */,
+				3297E68C233045AA0086AC64 /* LICENSE.txt in Resources */,
+				3297E67E233044EE0086AC64 /* success@3x.png in Resources */,
 				3242B4E7232F4B3C006A2E3E /* Main.storyboard in Resources */,
+				3297E67B233044EE0086AC64 /* angle-mask@2x.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -206,7 +288,9 @@
 				3242B506232F524F006A2E3E /* ObjSSH.m in Sources */,
 				3242B4E4232F4B3C006A2E3E /* ViewController.m in Sources */,
 				3297E664232F8EDE0086AC64 /* ntvBonjourViewController.m in Sources */,
+				3297E68E233045AA0086AC64 /* SVIndefiniteAnimatedView.m in Sources */,
 				3242B4EF232F4B3E006A2E3E /* main.m in Sources */,
+				3297E68F233045AA0086AC64 /* SVProgressHUD.m in Sources */,
 				3242B4FB232F4BB8006A2E3E /* SSHWrapper.m in Sources */,
 				3242B4E1232F4B3C006A2E3E /* AppDelegate.m in Sources */,
 				3297E66A23300F360086AC64 /* ntvNetService.m in Sources */,
