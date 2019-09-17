@@ -31,7 +31,7 @@
 - (void)showAlertWithTitle:(NSString *)title message:(NSString *)message {
     
     UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
-
+    
     [alertCon addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
     dispatch_async(dispatch_get_main_queue(), ^{
         [self presentViewController:alertCon animated:true completion:nil];
@@ -63,7 +63,7 @@
     [alertCon addAction:setPassword];
     [alertCon addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
     dispatch_async(dispatch_get_main_queue(), ^{
-            [self presentViewController:alertCon animated:true completion:nil];
+        [self presentViewController:alertCon animated:true completion:nil];
     });
 }
 
@@ -116,11 +116,6 @@
 
 - (void)fixStuffOnSession:(SSHWrapper *)wrapper {
     
-    //dispatch_async(dispatch_get_main_queue(), ^{
-    
-   // });
-    
-   
     __block NSError *connectError = nil;
     NSInteger issuesDetected = 0;
     NSInteger issuesFixed = 0;
@@ -131,9 +126,7 @@
     NSString *goNitoPermissionCheck = [wrapper executeCommand:permissionCheckCommand error:nil];
     NSString *tokenFileCheck = [wrapper executeCommand:tokenCheckCommand error:nil];
     NSString *keyCheckCommand = @"/usr/bin/bash apt-key list | grep -c \"030F 5D6E 7E14 4939 7E04  B6B2 5330 AE38 84B9 841D\"";
-    
-   
-    
+    NSMutableString *fixedIssues = [NSMutableString new];
     NSString *keyCheck = [wrapper executeCommand:keyCheckCommand error:nil];
     if (keyCheck.integerValue != 1){
         issuesDetected++;
@@ -145,6 +138,7 @@
         if (keyCheck.integerValue == 1){
             issuesFixed++;
             NSLog(@"missing keys fixed!");
+            [fixedIssues appendString:@"Fixed missing gpg keys\n"];
         }
     }
     if ([goNitoPermissionCheck integerValue] != 6755){
@@ -154,7 +148,9 @@
         goNitoPermissionCheck =  [wrapper executeCommand:permissionCheckCommand error:nil];
         if (goNitoPermissionCheck.integerValue == 6755){
             issuesFixed++;
-            NSLog(@"goNito permissions fixed!");
+            NSString *currentIssue = @"goNito permissions fixed!\n";
+            NSLog(@"%@", currentIssue);
+            [fixedIssues appendString:currentIssue];
         }
         
     }
@@ -164,8 +160,10 @@
         [wrapper executeCommand:@"/usr/local/bin/jtool --sign platform --inplace /usr/lib/libssl.1.1.dylib" error:nil];
         sslCodeSignCheck = [wrapper executeCommand:csCheckCommand error:&connectError];
         if ([sslCodeSignCheck containsString:@"CDHash"]){
-            NSLog(@"libssl issue fixed!");
             issuesFixed++;
+            NSString *currentIssue = @"unsigned libssl.1.1.dylib fixed!\n";
+            NSLog(@"%@", currentIssue);
+            [fixedIssues appendString:currentIssue];
         }
     }
     
@@ -176,32 +174,96 @@
         [wrapper executeCommand:@"/usr/bin/touch /var/mobile/Documents/.token" error:nil];
         tokenFileCheck = [wrapper executeCommand:tokenCheckCommand error:nil];
         if (![tokenFileCheck containsString:@"No such file or directory"]){
-            NSLog(@"Created .token file");
             issuesFixed++;
+            NSString *currentIssue = @"Missing .token file fixed!\n";
+            NSLog(@"%@", currentIssue);
+            [fixedIssues appendString:currentIssue];
         }
     }
-    NSString *checkAptCommand = @"/usr/bin/apt-get check > aptout 2&> aptout";
+    NSString *checkAptCommand = @"/usr/bin/apt-get check > /var/root/aptout 2&> /var/root/aptout";
     NSString *fixCommand = @"apt-get -f install";
     [wrapper executeCommand:checkAptCommand error:nil];
     NSError *theError = nil;
-    NSString *checkApt = [wrapper executeCommand:@"/usr/bin/cat aptout" error:&theError];
-    [wrapper executeCommand:@"/usr/bin/rm aptout" error:nil];
-    NSLog(@"theError: %@", theError);
+    NSString *checkApt = [wrapper executeCommand:@"/usr/bin/cat /var/root/aptout" error:&theError];
+    [wrapper executeCommand:@"/usr/bin/rm /var/root/aptout" error:nil];
+    NSString *interruptedDPKG = @"E: dpkg was interrupted, you must manually run 'dpkg --configure -a' to correct the problem.";
     if ([checkApt containsString:fixCommand]){
         NSLog(@"found unmet dependencies issue!");
         issuesDetected++;
         [wrapper executeCommand:[fixCommand stringByAppendingString:@" -y --force-yes"] error:nil];
         [wrapper executeCommand:checkAptCommand error:nil];
-        checkApt = [wrapper executeCommand:@"/usr/bin/cat aptout" error:&theError];
-        if (![checkApt containsString:fixCommand]){
+        sleep(2);
+        //NSString *ls = [wrapper executeCommand:@"ls -al /var/root/aptout" error:nil];
+        //NSLog(@"ls: %@", ls);
+        NSString *newCheckApt = [wrapper executeCommand:@"/usr/bin/cat /var/root/aptout" error:nil];
+        NSLog(@"newCheckApt: %@", newCheckApt);
+        newCheckApt = [wrapper executeCommand:@"/usr/bin/cat /var/root/aptout" error:nil];
+        NSLog(@"newCheckApt: %@", newCheckApt);
+        if (![newCheckApt containsString:fixCommand]){
             issuesFixed++;
-            NSLog(@"fixed dependency issues");
+            NSString *currentIssue = @"Unmet dependency issue fixed!\n";
+            NSLog(@"%@", currentIssue);
+            [fixedIssues appendString:currentIssue];
             [wrapper executeCommand:@"/usr/bin/rm aptout" error:nil];
+            
+        } else {
+            [wrapper executeCommand:@"/usr/bin/rm aptout" error:nil];
+            
+            //try try again
+            NSString *newCheck = @"/usr/bin/apt-get check /dev/null | grep bulletinh4x -c -m 1";
+            NSString *h4xCheck = [wrapper executeCommand:newCheck error:nil];
+            NSLog(@"h4xCheck: %@", h4xCheck);
+           // if (h4xCheck == 1){
+                [wrapper executeCommand:@"dpkg -r com.matchstic.reprovision" error:nil];
+                [wrapper executeCommand:@"apt-get -f install -y --force-yes" error:nil];
+                [wrapper executeCommand:@"apt-get install com.matchstic.reprovision=0.4.5 -y --force-yes" error:nil];
+                [wrapper executeCommand:checkAptCommand error:nil];
+                checkApt = [wrapper executeCommand:@"/usr/bin/cat /var/root/aptout" error:&theError];
+                checkApt = [wrapper executeCommand:@"/usr/bin/cat /var/root/aptout" error:&theError];
+                [wrapper executeCommand:@"/usr/bin/rm /var/root/aptout" error:nil];
+                if (![checkApt containsString:fixCommand]){
+                    issuesFixed++;
+                    NSString *currentIssue = @"Reprovision dependency issue fixed!\n";
+                    NSLog(@"%@", currentIssue);
+                    [fixedIssues appendString:currentIssue];
+                }
+            //}
         }
-        
-        
+    } else if ([checkApt containsString:interruptedDPKG]){
+        issuesDetected++;
+        NSError *myErrors = nil;
+        NSString *config = [wrapper executeCommand:@"/usr/bin/dpkg --configure -a" error:&myErrors];
+        //NSLog(@"config: %@", config);
+        [wrapper executeCommand:checkAptCommand error:nil];
+        checkApt = [wrapper executeCommand:@"/usr/bin/cat aptout" error:&theError];
+        [wrapper executeCommand:@"/usr/bin/rm aptout" error:nil];
+        if (![checkApt containsString:interruptedDPKG]){
+            issuesFixed++;
+            NSString *currentIssue = @"Unmet dependency issue fixed!\n";
+            NSLog(@"%@", currentIssue);
+            [fixedIssues appendString:currentIssue];
+        } else {
+            NSString *dpkgFirstCheck = @"dpkg -C | grep -c \"half configured\"";
+            NSInteger returnValue = [[wrapper executeCommand:dpkgFirstCheck error:nil] integerValue];
+            if (returnValue == 1){
+                NSString *dpkgStatus =  @"dpkg -C | grep -m 1 \"appletvos\" | cut -d \":\" -f 1 | tr -d \" \"";
+                NSString *errantPackage = [wrapper executeCommand:dpkgStatus error:nil];
+                NSLog(@"errant package: %@", errantPackage);
+                NSString *rmCmd = [NSString stringWithFormat:@"dpkg -r %@", errantPackage];
+                [wrapper executeCommand:rmCmd error:nil];
+                [wrapper executeCommand:@"/usr/bin/dpkg --configure -a" error:&myErrors];
+                [wrapper executeCommand:checkAptCommand error:nil];
+                checkApt = [wrapper executeCommand:@"/usr/bin/cat aptout" error:&theError];
+                [wrapper executeCommand:@"/usr/bin/rm aptout" error:nil];
+                if (![checkApt containsString:interruptedDPKG]){
+                    issuesFixed++;
+                    NSString *currentIssue = @"Interrupted dpkg issue fixed!\n";
+                    NSLog(@"%@", currentIssue);
+                    [fixedIssues appendString:currentIssue];
+                }
+            }
+        }
     }
-    
     dispatch_async(dispatch_get_main_queue(), ^{
         [SVProgressHUD dismiss];
     });
@@ -214,7 +276,7 @@
     }
     NSString *reportString = @"0 issues detected." ;
     if (issuesFixed > 0 || issuesDetected > 0){
-        reportString = [NSString stringWithFormat:@"%lu issue%@ detected. %lu issue%@ fixed", issuesDetected,plural , issuesFixed, plural];
+        reportString = [NSString stringWithFormat:@"%lu issue%@ detected. %lu issue%@ fixed\nReport: %@", issuesDetected,plural , issuesFixed, plural, fixedIssues];
     }
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Finished" message:reportString preferredStyle:UIAlertControllerStyleAlert];
     [alertController addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
@@ -263,7 +325,7 @@
         default:
             break;
     }
-
+    
     return cell;
 }
 
@@ -289,7 +351,7 @@
             
             [self fixCurrentDevice];
         }
-
+        
     }
     
 }
