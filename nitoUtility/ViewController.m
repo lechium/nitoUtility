@@ -7,9 +7,9 @@
 //
 
 #import "ViewController.h"
-#import "SSHWrapper.h"
-#import "ntvBonjourViewController.h"
-#import "ObjSSH.h"
+#import "Networking/SSHWrapper.h"
+#import "Networking/ntvBonjourViewController.h"
+#import "Networking/ObjSSH.h"
 #import "SVProgressHUD/SVProgressHUD.h"
 
 @interface ViewController ()
@@ -131,6 +131,9 @@
     NSString *goNitoPermissionCheck = [wrapper executeCommand:permissionCheckCommand error:nil];
     NSString *tokenFileCheck = [wrapper executeCommand:tokenCheckCommand error:nil];
     NSString *keyCheckCommand = @"/usr/bin/bash apt-key list | grep -c \"030F 5D6E 7E14 4939 7E04  B6B2 5330 AE38 84B9 841D\"";
+    
+   
+    
     NSString *keyCheck = [wrapper executeCommand:keyCheckCommand error:nil];
     if (keyCheck.integerValue != 1){
         issuesDetected++;
@@ -177,6 +180,28 @@
             issuesFixed++;
         }
     }
+    NSString *checkAptCommand = @"/usr/bin/apt-get check > aptout 2&> aptout";
+    NSString *fixCommand = @"apt-get -f install";
+    [wrapper executeCommand:checkAptCommand error:nil];
+    NSError *theError = nil;
+    NSString *checkApt = [wrapper executeCommand:@"/usr/bin/cat aptout" error:&theError];
+    [wrapper executeCommand:@"/usr/bin/rm aptout" error:nil];
+    NSLog(@"theError: %@", theError);
+    if ([checkApt containsString:fixCommand]){
+        NSLog(@"found unmet dependencies issue!");
+        issuesDetected++;
+        [wrapper executeCommand:[fixCommand stringByAppendingString:@" -y --force-yes"] error:nil];
+        [wrapper executeCommand:checkAptCommand error:nil];
+        checkApt = [wrapper executeCommand:@"/usr/bin/cat aptout" error:&theError];
+        if (![checkApt containsString:fixCommand]){
+            issuesFixed++;
+            NSLog(@"fixed dependency issues");
+            [wrapper executeCommand:@"/usr/bin/rm aptout" error:nil];
+        }
+        
+        
+    }
+    
     dispatch_async(dispatch_get_main_queue(), ^{
         [SVProgressHUD dismiss];
     });
@@ -202,7 +227,8 @@
 
 - (void)updateAllToLatest:(SSHWrapper *)session {
     
-    
+    [session executeCommand:@"apt-get update" error:nil];
+    [session executeCommand:@"apt-get -y -u dist-upgrade --force-yes" error:nil];
     
 }
 
