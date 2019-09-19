@@ -84,7 +84,7 @@ static int waitsocket(int socket_fd, LIBSSH2_SESSION *session)
 	const char* userChar = [user cStringUsingEncoding:NSUTF8StringEncoding];
 	const char* passwordChar = [password cStringUsingEncoding:NSUTF8StringEncoding];
     struct sockaddr_in sock_serv_addr;
-    unsigned long hostaddr = inet_addr(hostChar);
+    in_addr_t hostaddr = inet_addr(hostChar);
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     sock_serv_addr.sin_family = AF_INET;
@@ -111,7 +111,7 @@ static int waitsocket(int socket_fd, LIBSSH2_SESSION *session)
     while ((rc = libssh2_session_startup(session, sock)) ==
            LIBSSH2_ERROR_EAGAIN);
     if (rc) {
-        *error = [NSError errorWithDomain:@"de.felixschulze.sshwrapper" code:402 userInfo:@{NSLocalizedDescriptionKey : [NSString stringWithFormat:@"Failure establishing SSH session: %d", rc]}];
+        *error = [NSError errorWithDomain:@"de.felixschulze.sshwrapper" code:402 userInfo:@{NSLocalizedDescriptionKey : [NSString stringWithFormat:@"Failure establishing SSH session: %ld", (long)rc]}];
         return;
     }
 

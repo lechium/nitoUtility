@@ -11,10 +11,13 @@
 #import "Networking/ntvBonjourViewController.h"
 #import "Networking/ObjSSH.h"
 #import "SVProgressHUD/SVProgressHUD.h"
+#import "UICKeyChainStore/UICKeyChainStore.h"
 
 @interface ViewController ()
 
 @property (nonatomic, strong) ntvNetService *device;
+@property (nonatomic, strong) SSHWrapper *session;
+@property (nonatomic, strong) NSArray *applications;
 
 @end
 
@@ -38,13 +41,13 @@
     });
 }
 
-- (void)showInvalidPasswordAlert {
+- (void)showInvalidPasswordAlertWithCompletion:(void(^)(BOOL shouldContinue))block {
     
-    UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:@"Non default root password" message:@"Please enter the root password for your AppleTV" preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:@"Error authenticating" message:@"Please enter the root password for your AppleTV" preferredStyle:UIAlertControllerStyleAlert];
     [alertCon addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.secureTextEntry = true;
     }];
-    UIAlertAction *setPassword = [UIAlertAction actionWithTitle:@"Set Password" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    UIAlertAction *setPassword = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         
         NSString *newPassword = alertCon.textFields[0].text;
         NSError *newError = nil;
@@ -52,12 +55,47 @@
         
         if (newError == nil){
             [SVProgressHUD show];
+            UICKeyChainStore *store = [UICKeyChainStore keyChainStoreWithService:self.device.serviceName];
+            store[@"password"] = newPassword;
+            if (block){
+                block(true);
+            }
+            
+            
+        } else {
+            [self showInvalidPasswordAlertWithCompletion:block];
+        }
+    }];
+    [alertCon addAction:setPassword];
+    [alertCon addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self presentViewController:alertCon animated:true completion:nil];
+    });
+}
+
+- (void)showInvalidPasswordAlert:(SEL)selector value:(id)value {
+    
+    UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:@"Error authenticating" message:@"Please enter the root password for your AppleTV" preferredStyle:UIAlertControllerStyleAlert];
+    [alertCon addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.secureTextEntry = true;
+    }];
+    UIAlertAction *setPassword = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        
+        NSString *newPassword = alertCon.textFields[0].text;
+        NSError *newError = nil;
+        SSHWrapper *wrapper = [SSHWrapper new];[wrapper connectToHost:self.device.ipAddress port:22 user:@"root" password:newPassword error:&newError];
+        
+        if (newError == nil){
+            [SVProgressHUD show];
+            UICKeyChainStore *store = [UICKeyChainStore keyChainStoreWithService:self.device.serviceName];
+            store[@"password"] = newPassword;
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-                [self fixStuffOnSession:wrapper];
+                [self performSelector:selector withObject:value];
+                //[self fixStuffOnSession:wrapper];
             });
             
         } else {
-            [self showInvalidPasswordAlert];
+            [self showInvalidPasswordAlert:selector value:value];
         }
     }];
     [alertCon addAction:setPassword];
@@ -75,18 +113,32 @@
         return;
     }
     __block NSError *connectError = nil;
-    SSHWrapper *wrapper = [SSHWrapper new];
-    [wrapper connectToHost:self.device.ipAddress port:22 user:@"root" password:@"alpine" error:&connectError];
-    
-    if (connectError){
-        NSLog(@"connection error: %@", connectError);
-        [self showInvalidPasswordAlert];
-    } else {
+    if (self.session == nil){
+        self.session = [SSHWrapper new];
+        UICKeyChainStore *store = [UICKeyChainStore keyChainStoreWithService:self.device.serviceName];
+        NSString *pwCheck = store[@"password"];
+        if (!pwCheck){
+            pwCheck = @"alpine";
+        }
+        [self.session connectToHost:self.device.ipAddress port:22 user:@"root" password:pwCheck error:&connectError];
+        if (connectError){
+            NSLog(@"connection error: %@", connectError);
+            [self showInvalidPasswordAlert:@selector(fixStuffOnSession:) value:self.session];
+        } else {
+            [SVProgressHUD show];
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                [self fixStuffOnSession:self.session];
+            });
+        }
+    }  else {
         [SVProgressHUD show];
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-            [self fixStuffOnSession:wrapper];
+            [self fixStuffOnSession:self.session];
         });
     }
+    
+    
+    
 }
 
 
@@ -213,20 +265,20 @@
             NSString *newCheck = @"/usr/bin/apt-get check /dev/null | grep bulletinh4x -c -m 1";
             NSString *h4xCheck = [wrapper executeCommand:newCheck error:nil];
             NSLog(@"h4xCheck: %@", h4xCheck);
-           // if (h4xCheck == 1){
-                [wrapper executeCommand:@"dpkg -r com.matchstic.reprovision" error:nil];
-                [wrapper executeCommand:@"apt-get -f install -y --force-yes" error:nil];
-                [wrapper executeCommand:@"apt-get install com.matchstic.reprovision=0.4.5 -y --force-yes" error:nil];
-                [wrapper executeCommand:checkAptCommand error:nil];
-                checkApt = [wrapper executeCommand:@"/usr/bin/cat /var/root/aptout" error:&theError];
-                checkApt = [wrapper executeCommand:@"/usr/bin/cat /var/root/aptout" error:&theError];
-                [wrapper executeCommand:@"/usr/bin/rm /var/root/aptout" error:nil];
-                if (![checkApt containsString:fixCommand]){
-                    issuesFixed++;
-                    NSString *currentIssue = @"Reprovision dependency issue fixed!\n";
-                    NSLog(@"%@", currentIssue);
-                    [fixedIssues appendString:currentIssue];
-                }
+            // if (h4xCheck == 1){
+            [wrapper executeCommand:@"dpkg -r com.matchstic.reprovision" error:nil];
+            [wrapper executeCommand:@"apt-get -f install -y --force-yes" error:nil];
+            [wrapper executeCommand:@"apt-get install com.matchstic.reprovision=0.4.5 -y --force-yes" error:nil];
+            [wrapper executeCommand:checkAptCommand error:nil];
+            checkApt = [wrapper executeCommand:@"/usr/bin/cat /var/root/aptout" error:&theError];
+            checkApt = [wrapper executeCommand:@"/usr/bin/cat /var/root/aptout" error:&theError];
+            [wrapper executeCommand:@"/usr/bin/rm /var/root/aptout" error:nil];
+            if (![checkApt containsString:fixCommand]){
+                issuesFixed++;
+                NSString *currentIssue = @"Reprovision dependency issue fixed!\n";
+                NSLog(@"%@", currentIssue);
+                [fixedIssues appendString:currentIssue];
+            }
             //}
         }
     } else if ([checkApt containsString:interruptedDPKG]){
@@ -287,10 +339,137 @@
     NSLog(@"%lu issue(s) detected. %lu issue(s) fixed", issuesDetected, issuesFixed);
 }
 
-- (void)updateAllToLatest:(SSHWrapper *)session {
+- (void)showNotJailbrokenAlert {
+    [self showAlertWithTitle:@"An error occured" message:[NSString stringWithFormat:@"The %@ '%@' running %@ is not currently jailbroken.", self.device.serviceDictionary[@"model"], self.device.serviceName, self.device.serviceDictionary[@"osvers"]]];
+}
+
+- (void)createSessionWithBlock:(void(^)(BOOL success))block {
     
-    [session executeCommand:@"apt-get update" error:nil];
-    [session executeCommand:@"apt-get -y -u dist-upgrade --force-yes" error:nil];
+    if (![self isJailbroken]){
+        [self showNotJailbrokenAlert];
+        block(false);
+        return;
+    }
+    __block NSError *connectError = nil;
+    if (self.session == nil){
+ 
+        self.session = [SSHWrapper new];
+        UICKeyChainStore *store = [UICKeyChainStore keyChainStoreWithService:self.device.serviceName];
+        NSString *pwCheck = store[@"password"];
+        if (!pwCheck){
+            pwCheck = @"alpine";
+        }
+        [self.session connectToHost:self.device.ipAddress port:22 user:@"root" password:pwCheck error:&connectError];
+        if (connectError != nil){
+            [self showInvalidPasswordAlertWithCompletion:^(BOOL shouldContinue) {
+                if (block){
+                    block(shouldContinue);
+                }
+            }];
+        } else {
+           
+            block(true);
+        }
+    } else {
+        block(true);
+    }
+}
+
+- (void)attemptUpdate:(NSString *)update {
+    
+    [self createSessionWithBlock:^(BOOL success) {
+        
+        if (success){
+            [SVProgressHUD show];
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                
+                [self updateToLatest:update];
+                [self populateApplications];
+            });
+        }
+        
+    }];
+}
+
+- (void)_runCommandSetup {
+    
+    __block NSString *commandString = nil;
+    UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:@"Enter command" message:@"Please enter a custom command you would like to send to your AppleTV" preferredStyle:UIAlertControllerStyleAlert];
+    [alertCon addTextFieldWithConfigurationHandler:nil];
+    UIAlertAction *commandAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        
+        commandString = alertCon.textFields[0].text;
+        [self createSessionWithBlock:^(BOOL success) {
+            
+            if (success){
+                [SVProgressHUD show];
+                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                    
+                    [self runCustomCommand:commandString];
+                    sleep(1);
+                    [self populateApplications];
+                });
+            }
+            
+        }];
+    }];
+    
+    [alertCon addAction:commandAction];
+    [alertCon addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self presentViewController:alertCon animated:true completion:nil];
+    });
+    
+}
+
+- (void)runCustomCommand:(NSString *)command {
+    
+    NSLog(@"command: %@", command);
+    NSString *results = [self.session executeCommand:command error:nil];
+    NSLog(@"results: %@", results);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [SVProgressHUD dismiss];
+    });
+    [self showAlertWithTitle:@"Finished" message:results];
+}
+- (NSArray *)availableApps {
+    
+    NSMutableArray *apps = [NSMutableArray new];
+    [self.session executeCommand:@"lsdtrip apps  | tr -d \"\t\" > /var/root/trip.txt" error:nil];
+    NSString *rawList = [self.session executeCommand:@"cat /var/root/trip.txt" error:nil];
+    NSLog(@"rawList: %@", rawList);
+    if (rawList.length > 0){
+        NSArray *lines = [rawList componentsSeparatedByString:@"\n"];
+        [lines enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            NSArray *appComponents = [obj componentsSeparatedByString:@" ("];
+            if (appComponents.count > 1){
+                NSString *appName = appComponents[0];
+                NSString *identifier = [appComponents[1] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@") "]];
+                if (appName.length > 0 && identifier.length > 0){
+                    NSDictionary *anApp = @{@"name": appName, @"identifier":identifier };
+                    [apps addObject:anApp];
+                }
+            }
+        }];
+    }
+    return apps;
+    
+}
+- (void)updateToLatest:(NSString *)latest {
+    
+    [self.session executeCommand:@"apt-get update" error:nil];
+    NSString *installString = @"apt-get -y -u dist-upgrade --force-yes";
+    if (latest.length > 0){
+        installString = [NSString stringWithFormat:@"apt-get install %@ -y --force-yes", latest];
+    }
+    NSLog(@"install string: %@", installString);
+    NSString *results = [self.session executeCommand:installString error:nil];
+    NSLog(@"results: %@", results);
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [SVProgressHUD dismiss];
+    });
+    [self showAlertWithTitle:@"Finished" message:results];
     
 }
 
@@ -298,14 +477,45 @@
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     if (self.device != nil){
-        return 2;
+        if (self.applications.count > 0){
+            return 4;
+        }
+        return 3;
     } else {
         return 1;
     }
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    if (self.device == nil) return 1;
+    switch (section) {
+        case 1:
+            return 3;
+        case 2:
+            return 6;
+        case 3:
+            return self.applications.count;
+        default:
+            break;
+    }
     return 1;
+}
+
+-(NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
+    
+    switch (section) {
+        case 0:
+            return nil;
+        case 1:
+            return @"Utilities";
+        case 2:
+            return @"Commands";
+        case 3:
+            return @"Applications";
+        default:
+            break;
+    }
+    return nil;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -315,11 +525,62 @@
     switch (indexPath.section) {
         case 0:
             cell.textLabel.text = @"Select AppleTV";
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             break;
             
         case 1:
-            cell.textLabel.text = @"Run Diagnostics";
-            cell.textLabel.textColor = [UIColor redColor];
+            cell.accessoryType = UITableViewCellAccessoryNone;
+            switch (indexPath.row) {
+                case 0:
+                    cell.textLabel.text = @"Run Diagnostics";
+                    cell.textLabel.textColor = [UIColor redColor];
+                    break;
+                case 1:
+                    cell.textLabel.text = @"Update nitoTV";
+                    break;
+                case 2:
+                    cell.textLabel.text = @"Update All";
+                    break;
+          
+                    
+                default:
+                    break;
+            }
+            break;
+
+            
+        case 2: //section 2;
+            cell.accessoryType = UITableViewCellAccessoryNone;
+
+            switch (indexPath.row) {
+                case 0:
+                    cell.textLabel.text = @"uicache";
+                    break;
+                case 1:
+                    cell.textLabel.text = @"ldrestart";
+                    break;
+                case 2:
+                    cell.textLabel.text = @"respring";
+                    break;
+                case 3:
+                    cell.textLabel.text = @"sleep";
+                    break;
+                case 4:
+                    cell.textLabel.text = @"wake";
+                    break;
+                case 5:
+                    cell.textLabel.text = @"Custom command";
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+            
+        case 3:
+            cell.accessoryType = UITableViewCellAccessoryNone;
+            cell.textLabel.text = self.applications[indexPath.row][@"name"];
+            cell.textLabel.textColor = [UIColor darkTextColor];
             break;
             
         default:
@@ -329,6 +590,14 @@
     return cell;
 }
 
+- (void)terminateCurrentSession {
+    
+    if (self.session != nil){
+        [self.session closeConnection];
+        self.session = nil;
+        self.applications = nil;
+    }
+}
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
     
@@ -340,7 +609,9 @@
             [self.navigationController popViewControllerAnimated:true];
             self.title = device.title;
             self.device = device;
+            [self terminateCurrentSession];
             [self.tableView reloadData];
+ 
             
         };
         [self.navigationController pushViewController:bv animated:true];
@@ -349,12 +620,111 @@
         
         if (self.device != nil){
             
-            [self fixCurrentDevice];
+            [self processIndexPathSelect:indexPath];
         }
         
     }
     
 }
 
+- (void)processIndexPathSelect:(NSIndexPath *)indexPath {
+    
+    switch (indexPath.section) {
+        case 1:
+            [self processUtilityIndex:indexPath.row];
+            break;
+            
+        case 2:
+            [self processCommandIndex:indexPath.row];
+            break;
+            
+        case 3:
+            [self processApplicationIndex:indexPath.row];
+            break;
+            
+        default:
+            break;
+    }
+}
+
+- (void)processApplicationIndex:(NSInteger)index {
+    
+    NSString *identifier = self.applications[index][@"identifier"];
+    NSLog(@"launch app with identifier: %@", identifier );
+    [self _runCommand:[NSString stringWithFormat:@"lsdtrip launch %@", identifier]];
+    
+}
+
+- (void)processCommandIndex:(NSInteger)index {
+    
+    switch (index) {
+        case 0:
+            [self _runCommand:@"uicache"];
+            break;
+        case 1:
+            [self _runCommand:@"ldrestart"];
+            break;
+        case 2:
+            [self _runCommand:@"killall -9 backboardd"];
+            break;
+        case 3:
+            [self _runCommand:@"sleepy"];
+            break;
+        case 4:
+            [self _runCommand:@"wake"];
+            break;
+        case 5:
+            [self _runCommandSetup];
+            break;
+        default:
+            break;
+    }
+}
+
+- (void)populateApplications {
+    
+    if (self.session != nil){
+        if (self.applications == nil){
+            self.applications = [self availableApps];
+            [self.tableView reloadData];
+        }
+    }
+    
+}
+
+- (void)_runCommand:(NSString *)commandString {
+    
+    [self createSessionWithBlock:^(BOOL success) {
+        
+        if (success){
+            [SVProgressHUD show];
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                [self runCustomCommand:commandString];
+                [self populateApplications];
+            });
+        }
+        
+    }];
+}
+
+
+
+- (void)processUtilityIndex:(NSInteger)index {
+    
+    switch (index) {
+        case 0:
+            [self fixCurrentDevice];
+            break;
+        case 1:
+            [self attemptUpdate:@"com.nito.nitotv4"];
+            break;
+        case 2:
+            [self attemptUpdate:nil];
+            break;
+            break;
+        default:
+            break;
+    }
+}
 
 @end

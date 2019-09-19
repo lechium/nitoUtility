@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3223D4EC2332C16A00AE4BEA /* UICKeyChainStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 3223D4EB2332C16A00AE4BEA /* UICKeyChainStore.m */; };
 		3242B4E1232F4B3C006A2E3E /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 3242B4E0232F4B3C006A2E3E /* AppDelegate.m */; };
 		3242B4E4232F4B3C006A2E3E /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 3242B4E3232F4B3C006A2E3E /* ViewController.m */; };
 		3242B4E7232F4B3C006A2E3E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3242B4E5232F4B3C006A2E3E /* Main.storyboard */; };
@@ -39,6 +40,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		3223D4EA2332C16A00AE4BEA /* UICKeyChainStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UICKeyChainStore.h; sourceTree = "<group>"; };
+		3223D4EB2332C16A00AE4BEA /* UICKeyChainStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UICKeyChainStore.m; sourceTree = "<group>"; };
 		3242B4DC232F4B3C006A2E3E /* nitoUtility.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nitoUtility.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3242B4DF232F4B3C006A2E3E /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		3242B4E0232F4B3C006A2E3E /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -97,6 +100,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3223D4E92332C16A00AE4BEA /* UICKeyChainStore */ = {
+			isa = PBXGroup;
+			children = (
+				3223D4EA2332C16A00AE4BEA /* UICKeyChainStore.h */,
+				3223D4EB2332C16A00AE4BEA /* UICKeyChainStore.m */,
+			);
+			path = UICKeyChainStore;
+			sourceTree = "<group>";
+		};
 		3242B4D3232F4B3C006A2E3E = {
 			isa = PBXGroup;
 			children = (
@@ -117,6 +129,7 @@
 		3242B4DE232F4B3C006A2E3E /* nitoUtility */ = {
 			isa = PBXGroup;
 			children = (
+				3223D4E92332C16A00AE4BEA /* UICKeyChainStore */,
 				3297E685233045A90086AC64 /* SVProgressHUD */,
 				3242B4DF232F4B3C006A2E3E /* AppDelegate.h */,
 				3242B4E0232F4B3C006A2E3E /* AppDelegate.m */,
@@ -288,6 +301,7 @@
 				3242B506232F524F006A2E3E /* ObjSSH.m in Sources */,
 				3242B4E4232F4B3C006A2E3E /* ViewController.m in Sources */,
 				3297E664232F8EDE0086AC64 /* ntvBonjourViewController.m in Sources */,
+				3223D4EC2332C16A00AE4BEA /* UICKeyChainStore.m in Sources */,
 				3297E68E233045AA0086AC64 /* SVIndefiniteAnimatedView.m in Sources */,
 				3242B4EF232F4B3E006A2E3E /* main.m in Sources */,
 				3297E68F233045AA0086AC64 /* SVProgressHUD.m in Sources */,
