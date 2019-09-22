@@ -26,7 +26,7 @@
     //_airplay._tcp.
     //_mediaremotetv._tcp.
     [browser searchForServicesOfType:@"_airplay._tcp." inDomain:@""];
-    [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"Cell"];
+    //[self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"Cell"];
 }
 
 
@@ -210,8 +210,15 @@
 {
     static NSString *CellIdentifier = @"Cell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
+    if (!cell){
+        
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:CellIdentifier];
+    }
+    //UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
     NSString *currentService = [[services objectAtIndex:indexPath.row] name];
+    NSString *ipAddress = [[services objectAtIndex:indexPath.row] easyIP];
     cell.textLabel.text = currentService;
+    cell.detailTextLabel.text = ipAddress;
 
     return cell;
 }

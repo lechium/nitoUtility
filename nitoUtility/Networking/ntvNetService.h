@@ -12,6 +12,12 @@
 #import <netinet/in.h>
 #import <arpa/inet.h>
 
+@interface NSNetService (scienceBro)
+
+- (NSString *)easyIP;
+
+@end
+
 @interface ntvNetService : NSObject
 
 @property (nonatomic, strong) NSString *ipAddress;

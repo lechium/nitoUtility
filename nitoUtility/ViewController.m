@@ -27,7 +27,7 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
     self.title = @"";
-    [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"defaultCell"];
+   // [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"defaultCell"];
     
 }
 
@@ -51,7 +51,8 @@
         
         NSString *newPassword = alertCon.textFields[0].text;
         NSError *newError = nil;
-        SSHWrapper *wrapper = [SSHWrapper new];[wrapper connectToHost:self.device.ipAddress port:22 user:@"root" password:newPassword error:&newError];
+        self.session = [SSHWrapper new];
+        [self.session connectToHost:self.device.ipAddress port:22 user:@"root" password:newPassword error:&newError];
         
         if (newError == nil){
             [SVProgressHUD show];
@@ -339,6 +340,41 @@
     }];
 }
 
+- (void)_changePasswordSetup {
+    
+    __block NSString *thePassword = nil;
+    UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:@"Enter new password" message:@"Enter a new root & mobile password for your AppleTV" preferredStyle:UIAlertControllerStyleAlert];
+    [alertCon addTextFieldWithConfigurationHandler:nil];
+    UIAlertAction *commandAction = [UIAlertAction actionWithTitle:@"Change Password" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        
+        thePassword = alertCon.textFields[0].text;
+        [self createSessionWithBlock:^(BOOL success) {
+            
+            if (success){
+                [SVProgressHUD show];
+                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                    
+                    NSString *sendString = [NSString stringWithFormat:@"echo -e \"%@\n%@\" | passwd root", thePassword, thePassword];
+                    NSString *sendString2 = [NSString stringWithFormat:@"echo -e \"%@\n%@\" | passwd mobile", thePassword, thePassword];
+                    [self runCustomCommand:sendString];
+                    [self runCustomCommand:sendString2];
+                    UICKeyChainStore *store = [UICKeyChainStore keyChainStoreWithService:self.device.serviceName];
+                    store[@"password"] = thePassword;
+                    //[self populateApplications];
+                });
+            }
+            
+        }];
+    }];
+    
+    [alertCon addAction:commandAction];
+    [alertCon addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self presentViewController:alertCon animated:true completion:nil];
+    });
+    
+}
+
 - (void)_runCommandSetup {
     
     __block NSString *commandString = nil;
@@ -400,7 +436,9 @@
             }
         }];
     }
-    return apps;
+    NSSortDescriptor *nameDesc = [NSSortDescriptor sortDescriptorWithKey:@"name" ascending:true];
+    return [apps sortedArrayUsingDescriptors:@[nameDesc]];
+    
     
 }
 - (void)updateToLatest:(NSString *)latest {
@@ -440,7 +478,7 @@
         case 1:
             return 3;
         case 2:
-            return 6;
+            return 7;
         case 3:
             return self.applications.count;
         default:
@@ -467,12 +505,18 @@
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"defaultCell" forIndexPath:indexPath];
-    
+   // UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"defaultCell" forIndexPath:indexPath];
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"defaultCell"];
+    if (!cell){
+        
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"defaultCell"];
+    }
+    cell.detailTextLabel.text = nil;
     //cell.selectionStyle = UITableViewCellSelectionStyleNone;
     switch (indexPath.section) {
         case 0:
             cell.textLabel.text = @"Select AppleTV";
+            
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             break;
             
@@ -519,6 +563,10 @@
                 case 5:
                     cell.textLabel.text = @"Custom command";
                     break;
+                    
+                case 6: //change root/mobile passwords
+                    cell.textLabel.text = @"Change device passwords";
+                    break;
 
                 default:
                     break;
@@ -526,9 +574,14 @@
             break;
             
         case 3:
+        {
+            NSDictionary *entry = self.applications[indexPath.row];
             cell.accessoryType = UITableViewCellAccessoryNone;
-            cell.textLabel.text = self.applications[indexPath.row][@"name"];
+            cell.textLabel.text = entry[@"name"];
+            cell.detailTextLabel.text = entry[@"identifier"];
             cell.textLabel.textColor = [UIColor darkTextColor];
+            cell.detailTextLabel.textColor = [UIColor grayColor];
+        }
             break;
             
         default:
@@ -559,6 +612,7 @@
             self.device = device;
             [self terminateCurrentSession];
             [self.tableView reloadData];
+            [self loadAppsIfPossible];
  
             
         };
@@ -572,6 +626,12 @@
         }
         
     }
+    
+}
+
+- (void)loadAppsIfPossible {
+    
+    
     
 }
 
@@ -624,6 +684,11 @@
         case 5:
             [self _runCommandSetup];
             break;
+            
+        case 6:
+            [self _changePasswordSetup];
+            break;
+            
         default:
             break;
     }
