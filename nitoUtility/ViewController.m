@@ -371,29 +371,44 @@
 - (void)_changePasswordSetup {
     
     __block NSString *thePassword = nil;
+    __block NSString *verifyPassword = nil;
     UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:@"Enter new password" message:@"Enter a new root & mobile password for your AppleTV" preferredStyle:UIAlertControllerStyleAlert];
-    [alertCon addTextFieldWithConfigurationHandler:nil];
+    [alertCon addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Enter Password";
+        textField.secureTextEntry = true;
+    }];
+    [alertCon addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Verify Password";
+        textField.secureTextEntry = true;
+    }];
     UIAlertAction *commandAction = [UIAlertAction actionWithTitle:@"Change Password" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         
         thePassword = alertCon.textFields[0].text;
-        [self createSessionWithBlock:^(BOOL success) {
-            
-            if (success){
-                [SVProgressHUD show];
-                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-                    
-                    NSString *sendString = [NSString stringWithFormat:@"echo -e \"%@\n%@\" | passwd root", thePassword, thePassword];
-                    NSString *sendString2 = [NSString stringWithFormat:@"echo -e \"%@\n%@\" | passwd mobile", thePassword, thePassword];
-                    [self runCustomCommand:sendString];
-                    [self runCustomCommand:sendString2];
-                    UICKeyChainStore *store = [UICKeyChainStore keyChainStoreWithService:self.device.serviceName];
-                    store[@"password"] = thePassword;
-                    //[self populateApplications];
-                });
-            }
-            
-        }];
-    }];
+        verifyPassword = alertCon.textFields[1].text;
+        if ([thePassword isEqualToString:verifyPassword]){
+            [self createSessionWithBlock:^(BOOL success) {
+                
+                if (success){
+                    [SVProgressHUD show];
+                    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                        
+                        NSString *sendString = [NSString stringWithFormat:@"echo -e \"%@\n%@\" | passwd root", thePassword, thePassword];
+                        NSString *sendString2 = [NSString stringWithFormat:@"echo -e \"%@\n%@\" | passwd mobile", thePassword, thePassword];
+                        [self runCustomCommand:sendString];
+                        [self runCustomCommand:sendString2];
+                        UICKeyChainStore *store = [UICKeyChainStore keyChainStoreWithService:self.device.serviceName];
+                        store[@"password"] = thePassword;
+                        //[self populateApplications];
+                    });
+                }
+                
+            }];
+
+        } else {
+            [self _changePasswordSetup];
+        }
+        
+            }];
     
     [alertCon addAction:commandAction];
     [alertCon addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
