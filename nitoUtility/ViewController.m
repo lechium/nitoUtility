@@ -292,6 +292,34 @@
     [self showAlertWithTitle:@"An error occured" message:[NSString stringWithFormat:@"The %@ '%@' running %@ is not currently jailbroken.", self.device.serviceDictionary[@"model"], self.device.serviceName, self.device.serviceDictionary[@"osvers"]]];
 }
 
+- (void)attemptCreateSessionWithBlock:(void(^)(BOOL success))block {
+ 
+    __block NSError *connectError = nil;
+    if (self.session == nil){
+        
+        self.session = [SSHWrapper new];
+        UICKeyChainStore *store = [UICKeyChainStore keyChainStoreWithService:self.device.serviceName];
+        NSString *pwCheck = store[@"password"];
+        if (!pwCheck){
+            pwCheck = @"alpine";
+        }
+        [self.session connectToHost:self.device.ipAddress port:22 user:@"root" password:pwCheck error:&connectError];
+        if (connectError != nil){
+            
+            if (block){
+                block(false);
+            }
+            
+        } else {
+            
+            block(true);
+        }
+    } else {
+        block(true);
+    }
+    
+}
+
 - (void)createSessionWithBlock:(void(^)(BOOL success))block {
     
     if (![self isJailbroken]){
@@ -630,8 +658,14 @@
 }
 
 - (void)loadAppsIfPossible {
-    
-    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+        [self attemptCreateSessionWithBlock:^(BOOL success) {
+            if (success){
+                [self populateApplications];
+            }
+        }];
+    });
+   
     
 }
 
