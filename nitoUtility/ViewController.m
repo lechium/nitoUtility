@@ -28,7 +28,7 @@
     // Do any additional setup after loading the view, typically from a nib.
     self.title = @"";
    // [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"defaultCell"];
-    
+ 
 }
 
 - (void)showAlertWithTitle:(NSString *)title message:(NSString *)message {
@@ -351,6 +351,30 @@
         block(true);
     }
 }
+
+
+/*
+ 
+ The following packages are only half configured, probably due to problems
+ configuring them the first time.  The configuration should be retried using
+ dpkg --configure <package> or the configure menu option in dselect:
+ com.nito.breaker:appletvos-arm64 This is a test application to deliberately break dpkg, do
+ 
+ The following packages have been triggered, but the trigger processing
+ has not yet been done.  Trigger processing can be requested using
+ dselect or dpkg --configure --pending (or dpkg --triggers-only):
+ com.nito.nitotv4:appletvos-arm64 AppleTV 4 Package installer
+ 
+ The following packages are missing the md5sums control file in the
+ database, they need to be reinstalled:
+ cy+cpu.arm64:appletvos-arm64 virtual CPU dependency
+ cy+kernel.darwin:appletvos-arm64 virtual kernel dependency
+ cy+lib.corefoundation:appletvos-arm64 virtual corefoundation dependency
+ cy+model.appletv:appletvos-arm64 virtual model dependency
+ cy+os.ios:appletvos-arm64 virtual operating system dependency
+ firmware:appletvos-arm64 almost impressive Apple frameworks
+ 
+ */
 
 - (void)attemptUpdate:(NSString *)update {
     
