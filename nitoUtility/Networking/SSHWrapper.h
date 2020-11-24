@@ -24,7 +24,7 @@
 
 }
 
-- (void)connectToHost:(NSString *)host port:(int)port user:(NSString *)user password:(NSString *)password error:(NSError **)error;
+- (void)connectToHost:(NSString *)host port:(NSInteger)port user:(NSString *)user password:(NSString *)password error:(NSError **)error;
 - (void)closeConnection;
 - (NSString *)executeCommand:(NSString *)command error:(NSError **)error;
 

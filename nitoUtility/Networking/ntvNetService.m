@@ -26,13 +26,20 @@
     if (self){
         //struct sockaddr_in *addr = (struct sockaddr_in *) [[[service addresses] objectAtIndex:0] bytes];
         _ipAddress = [service easyIP];
-        _fullIP = [NSString stringWithFormat:@"%@:%i", _ipAddress, 22];
+        _port = 22;
+        _fullIP = [NSString stringWithFormat:@"%@:%li", _ipAddress, _port];
         _title = [NSString stringWithFormat:@"%@ (%@)", [service name], _fullIP];
         _serviceName = [service name];
 
     }
     return self;
-    
 }
+
+- (void)updatePort:(NSInteger)port {
+    _port = port;
+    _fullIP = [NSString stringWithFormat:@"%@:%li", _ipAddress, _port];
+    _title = [NSString stringWithFormat:@"%@ (%@)", _serviceName, _fullIP];
+}
+
 
 @end

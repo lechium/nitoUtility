@@ -75,7 +75,7 @@ static int waitsocket(int socket_fd, LIBSSH2_SESSION *session)
 }
 
 
-- (void)connectToHost:(NSString *)host port:(int)port user:(NSString *)user password:(NSString *)password error:(NSError **)error {
+- (void)connectToHost:(NSString *)host port:(NSInteger)port user:(NSString *)user password:(NSString *)password error:(NSError **)error {
     if (host.length == 0) {
         *error = [NSError errorWithDomain:@"de.felixschulze.sshwrapper" code:300 userInfo:@{NSLocalizedDescriptionKey:@"No host"}];
         return;

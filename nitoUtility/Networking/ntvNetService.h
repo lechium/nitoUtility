@@ -29,6 +29,7 @@
 
 
 - (id)initWithNetService:(NSNetService *)service;
+- (void)updatePort:(NSInteger)port;
 
 @end
 

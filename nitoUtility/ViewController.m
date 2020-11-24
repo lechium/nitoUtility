@@ -12,6 +12,50 @@
 #import "Networking/ObjSSH.h"
 #import "SVProgressHUD/SVProgressHUD.h"
 #import "UICKeyChainStore/UICKeyChainStore.h"
+#import <objc/runtime.h>
+
+@interface UIView (darkMode)
+- (BOOL)darkMode;
+@end
+
+@implementation UIView (darkMode)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunguarded-availability-new"
+#pragma clang diagnostic ignored "-Wunguarded-availability"
+- (BOOL)darkMode {
+
+    if ([[self traitCollection] respondsToSelector:@selector(userInterfaceStyle)]){
+        return ([[self traitCollection] userInterfaceStyle] == UIUserInterfaceStyleDark);
+    } else {
+        return false;
+    }
+    return false;
+}
+#pragma clang diagnostic pop
+
+@end
+
+@interface PBSSystemService : NSObject
++(id)sharedInstance;
+-(void)deactivateScreenSaver;
+@end
+
+@interface PBSPowerManager : NSObject
+
++(id)sharedInstance;
++(void)load;
++(void)setupPowerManagement;
+-(void)_performUserEventWakeDevice;
+-(void)wakeDeviceWithOptions:(id)arg1;
+-(void)setNeedsDisplayWakeOnPowerOn:(BOOL)arg1;
+- (void)sleepDeviceWithOptions:(id)arg1;
+-(void)_registerForPowerNotifications;
+-(void)_registerForThermalNotifications;
+-(void)_enableIdleSleepAndWatchdog;
+-(void)_registerForBackBoardNotifications;
+-(void)_updateIdleTimer;
+@end
+
 
 @interface ViewController ()
 
@@ -90,6 +134,21 @@
     
 }
 
+- (void)attemptPortCheck {
+    NSError *error = nil;
+    if (self.device != nil){
+        ObjSSH *ssh = [ObjSSH connectToHost:self.device.fullIP withUsername:@"root" password:@"alpine" error:&error];
+        if (error) {
+            NSLog(@"error: %@", error);
+            if (error.code == 100){
+                [ssh disconnect];
+                NSLog(@"22 failed, attempting 44!");
+                [[self device] updatePort:44];
+                self.title = [[self device] title];
+            }
+        }
+    }
+}
 
 - (BOOL)isJailbroken
 {
@@ -117,6 +176,7 @@
 
 - (void)fixStuffOnSession {
     
+  
     __block NSError *connectError = nil;
     NSInteger issuesDetected = 0;
     NSInteger issuesFixed = 0;
@@ -235,6 +295,7 @@
         NSError *myErrors = nil;
         NSString *config = [self.session executeCommand:@"/usr/bin/dpkg --configure -a" error:&myErrors];
         //NSLog(@"config: %@", config);
+        
         [self.session executeCommand:checkAptCommand error:nil];
         checkApt = [self.session executeCommand:@"/usr/bin/cat aptout" error:&theError];
         [self.session executeCommand:@"/usr/bin/rm aptout" error:nil];
@@ -303,9 +364,14 @@
         if (!pwCheck){
             pwCheck = @"alpine";
         }
-        [self.session connectToHost:self.device.ipAddress port:22 user:@"root" password:pwCheck error:&connectError];
+        [self.session connectToHost:self.device.ipAddress port:self.device.port user:@"root" password:pwCheck error:&connectError];
         if (connectError != nil){
-            
+            if (connectError.code == 403){
+                NSLog(@"bad pasword");
+            } else if (connectError.code == 400){
+                NSLog(@"failed to connect!");
+            }
+            //NSLog(@"connect error: %@", connectError);
             if (block){
                 block(false);
             }
@@ -321,7 +387,7 @@
 }
 
 - (void)createSessionWithBlock:(void(^)(BOOL success))block {
-    
+    [self attemptPortCheck];
     if (![self isJailbroken]){
         [self showNotJailbrokenAlert];
         block(false);
@@ -336,7 +402,7 @@
         if (!pwCheck){
             pwCheck = @"alpine";
         }
-        [self.session connectToHost:self.device.ipAddress port:22 user:@"root" password:pwCheck error:&connectError];
+        [self.session connectToHost:self.device.ipAddress port:self.device.port user:@"root" password:pwCheck error:&connectError];
         if (connectError != nil){
             [self showInvalidPasswordAlertWithCompletion:^(BOOL shouldContinue) {
                 if (block){
@@ -583,8 +649,12 @@
     switch (indexPath.section) {
         case 0:
             cell.textLabel.text = @"Select AppleTV";
-            
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+            if ([self.view darkMode]){
+                cell.textLabel.textColor = [UIColor whiteColor];
+            } else {
+                cell.textLabel.textColor = [UIColor blackColor];
+            }
             break;
             
         case 1:
@@ -596,9 +666,19 @@
                     break;
                 case 1:
                     cell.textLabel.text = @"Update nitoTV";
+                    if ([self.view darkMode]){
+                        cell.textLabel.textColor = [UIColor whiteColor];
+                    } else {
+                        cell.textLabel.textColor = [UIColor blackColor];
+                    }
                     break;
                 case 2:
                     cell.textLabel.text = @"Update All";
+                    if ([self.view darkMode]){
+                        cell.textLabel.textColor = [UIColor whiteColor];
+                    } else {
+                        cell.textLabel.textColor = [UIColor blackColor];
+                    }
                     break;
           
                     
@@ -610,7 +690,11 @@
             
         case 2: //section 2;
             cell.accessoryType = UITableViewCellAccessoryNone;
-
+            if ([self.view darkMode]){
+                cell.textLabel.textColor = [UIColor whiteColor];
+            } else {
+                cell.textLabel.textColor = [UIColor blackColor];
+            }
             switch (indexPath.row) {
                 case 0:
                     cell.textLabel.text = @"uicache";
@@ -634,7 +718,7 @@
                 case 6: //change root/mobile passwords
                     cell.textLabel.text = @"Change device passwords";
                     break;
-
+                
                 default:
                     break;
             }
@@ -646,7 +730,11 @@
             cell.accessoryType = UITableViewCellAccessoryNone;
             cell.textLabel.text = entry[@"name"];
             cell.detailTextLabel.text = entry[@"identifier"];
-            cell.textLabel.textColor = [UIColor darkTextColor];
+            if ([self.view darkMode]){
+                cell.textLabel.textColor = [UIColor whiteColor];
+            } else {
+                cell.textLabel.textColor = [UIColor blackColor];
+            }
             cell.detailTextLabel.textColor = [UIColor grayColor];
         }
             break;
@@ -701,6 +789,8 @@
         [self attemptCreateSessionWithBlock:^(BOOL success) {
             if (success){
                 [self populateApplications];
+            } else {
+                self.session = nil;
             }
         }];
     });
