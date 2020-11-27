@@ -23,7 +23,7 @@
 #pragma clang diagnostic ignored "-Wunguarded-availability-new"
 #pragma clang diagnostic ignored "-Wunguarded-availability"
 - (BOOL)darkMode {
-
+    
     if ([[self traitCollection] respondsToSelector:@selector(userInterfaceStyle)]){
         return ([[self traitCollection] userInterfaceStyle] == UIUserInterfaceStyleDark);
     } else {
@@ -71,17 +71,18 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
     self.title = @"";
-   // [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"defaultCell"];
- 
+    // [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"defaultCell"];
+    
 }
 
 - (void)showAlertWithTitle:(NSString *)title message:(NSString *)message {
-    
-    UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
-    
-    [alertCon addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self presentViewController:alertCon animated:true completion:nil];
+        UIAlertController *alertCon = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+        
+        [alertCon addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:alertCon animated:true completion:^{
+            [[alertCon view] setHidden:false];
+        }];
     });
 }
 
@@ -96,7 +97,7 @@
         NSString *newPassword = alertCon.textFields[0].text;
         NSError *newError = nil;
         self.session = [SSHWrapper new];
-        [self.session connectToHost:self.device.ipAddress port:22 user:@"root" password:newPassword error:&newError];
+        [self.session connectToHost:self.device.ipAddress port:self.device.port user:@"root" password:newPassword error:&newError];
         
         if (newError == nil){
             [SVProgressHUD show];
@@ -114,7 +115,9 @@
     [alertCon addAction:setPassword];
     [alertCon addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self presentViewController:alertCon animated:true completion:nil];
+        [self presentViewController:alertCon animated:true completion:^{
+            [[alertCon view] setHidden:false];
+        }];
     });
 }
 
@@ -176,7 +179,7 @@
 
 - (void)fixStuffOnSession {
     
-  
+    
     __block NSError *connectError = nil;
     NSInteger issuesDetected = 0;
     NSInteger issuesFixed = 0;
@@ -343,7 +346,9 @@
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Finished" message:reportString preferredStyle:UIAlertControllerStyleAlert];
     [alertController addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self presentViewController:alertController animated:TRUE completion:nil];
+        [self presentViewController:alertController animated:true completion:^{
+            [[alertController view] setHidden:false];
+        }];
         
     });
     NSLog(@"%lu issue(s) detected. %lu issue(s) fixed", issuesDetected, issuesFixed);
@@ -354,24 +359,34 @@
 }
 
 - (void)attemptCreateSessionWithBlock:(void(^)(BOOL success))block {
- 
+    
     __block NSError *connectError = nil;
     if (self.session == nil){
         
         self.session = [SSHWrapper new];
         UICKeyChainStore *store = [UICKeyChainStore keyChainStoreWithService:self.device.serviceName];
         NSString *pwCheck = store[@"password"];
+        NSLog(@"pwCheck: %@", pwCheck);
         if (!pwCheck){
             pwCheck = @"alpine";
         }
+        NSLog(@"ipadress: %@ port: %lu", self.device.ipAddress, self.device.port);
         [self.session connectToHost:self.device.ipAddress port:self.device.port user:@"root" password:pwCheck error:&connectError];
         if (connectError != nil){
             if (connectError.code == 403){
                 NSLog(@"bad pasword");
             } else if (connectError.code == 400){
                 NSLog(@"failed to connect!");
+            } else if (connectError.code == 402){
+                NSLog(@"BRUH");
+                NSLog(@"22 failed, attempting 44!");
+                [[self device] updatePort:44];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    self.title = [[self device] title];
+                });
+                
             }
-            //NSLog(@"connect error: %@", connectError);
+            NSLog(@"connect error: %li", connectError.code);
             if (block){
                 block(false);
             }
@@ -395,7 +410,7 @@
     }
     __block NSError *connectError = nil;
     if (self.session == nil){
- 
+        
         self.session = [SSHWrapper new];
         UICKeyChainStore *store = [UICKeyChainStore keyChainStoreWithService:self.device.serviceName];
         NSString *pwCheck = store[@"password"];
@@ -410,7 +425,7 @@
                 }
             }];
         } else {
-           
+            
             block(true);
         }
     } else {
@@ -493,17 +508,19 @@
                 }
                 
             }];
-
+            
         } else {
             [self _changePasswordSetup];
         }
         
-            }];
+    }];
     
     [alertCon addAction:commandAction];
     [alertCon addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self presentViewController:alertCon animated:true completion:nil];
+        [self presentViewController:alertCon animated:true completion:^{
+            [[alertCon view] setHidden:false];
+        }];
     });
     
 }
@@ -534,7 +551,9 @@
     [alertCon addAction:commandAction];
     [alertCon addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self presentViewController:alertCon animated:true completion:nil];
+        [self presentViewController:alertCon animated:true completion:^{
+            [[alertCon view] setHidden:false];
+        }];
     });
     
 }
@@ -547,7 +566,9 @@
     dispatch_async(dispatch_get_main_queue(), ^{
         [SVProgressHUD dismiss];
     });
-    [self showAlertWithTitle:@"Finished" message:results];
+    if (results){
+        [self showAlertWithTitle:@"Finished" message:results];
+    }
 }
 - (NSArray *)availableApps {
     
@@ -584,7 +605,7 @@
     NSLog(@"install string: %@", installString);
     NSString *results = [self.session executeCommand:installString error:nil];
     NSLog(@"results: %@", results);
-
+    
     dispatch_async(dispatch_get_main_queue(), ^{
         [SVProgressHUD dismiss];
     });
@@ -638,7 +659,7 @@
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-   // UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"defaultCell" forIndexPath:indexPath];
+    // UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"defaultCell" forIndexPath:indexPath];
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"defaultCell"];
     if (!cell){
         
@@ -680,13 +701,13 @@
                         cell.textLabel.textColor = [UIColor blackColor];
                     }
                     break;
-          
+                    
                     
                 default:
                     break;
             }
             break;
-
+            
             
         case 2: //section 2;
             cell.accessoryType = UITableViewCellAccessoryNone;
@@ -718,7 +739,7 @@
                 case 6: //change root/mobile passwords
                     cell.textLabel.text = @"Change device passwords";
                     break;
-                
+                    
                 default:
                     break;
             }
@@ -768,7 +789,7 @@
             [self terminateCurrentSession];
             [self.tableView reloadData];
             [self loadAppsIfPossible];
- 
+            
             
         };
         [self.navigationController pushViewController:bv animated:true];
@@ -794,7 +815,7 @@
             }
         }];
     });
-   
+    
     
 }
 
@@ -863,9 +884,9 @@
         if (self.applications == nil){
             self.applications = [self availableApps];
             dispatch_async(dispatch_get_main_queue(), ^{
-                 [self.tableView reloadData];
+                [self.tableView reloadData];
             });
-           
+            
         }
     }
     
@@ -876,7 +897,10 @@
     [self createSessionWithBlock:^(BOOL success) {
         
         if (success){
-            [SVProgressHUD show];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [SVProgressHUD show];
+            });
+            
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
                 [self runCustomCommand:commandString];
                 [self populateApplications];
